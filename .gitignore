@@ -1,4 +1,12 @@
-node_modules/
-dist/
+# Environment
 .env
-/src/generated/prisma
+.env.local
+
+# Database
+postgres-data/
+
+# Dependencies
+node_modules/
+
+# Build
+dist/

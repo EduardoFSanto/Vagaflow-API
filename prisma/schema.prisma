@@ -4,51 +4,183 @@ generator client {
 
 datasource db {
   provider = "postgresql"
-  
 }
 
+// ============================================
+// 1. USER - Tabela de Autenticação
+// ============================================
+// POR QUÊ: Unifica auth de candidatos e empresas
+// Um único lugar pra login, email único no sistema
+
 model User {
-  id       String   @id @default(uuid())
-  email    String   @unique
+  id       String @id @default(uuid())
+  email    String @unique
   password String
   role     Role
-  company  Company?
+  
+  // Relações (só 1 pode existir!)
+  company   Company?
   candidate Candidate?
+  
+  // Auditoria (quando foi criado/atualizado)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  @@map("users") // Nome da tabela no PostgreSQL
 }
 
 enum Role {
-  CANDIDATE
-  COMPANY
+  CANDIDATE // Candidato buscando vaga
+  COMPANY   // Empresa oferecendo vaga
 }
+
+// ============================================
+// 2. COMPANY - Dados da Empresa
+// ============================================
+// POR QUÊ: Separado de User porque nem todo User é Company
+// Só existe se role = COMPANY
 
 model Company {
-  id      String @id @default(uuid())
-  name    String
-  userId  String @unique
-  user    User   @relation(fields: [userId], references: [id])
-  jobs    Job[]
+  id     String @id @default(uuid())
+  userId String @unique // 1 User = 1 Company
+  
+  // Relação com User
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  // onDelete: Cascade = Se deletar User, deleta Company também
+  
+  // Dados da empresa
+  name        String
+  description String?  // ? = opcional
+  cnpj        String?  @unique
+  website     String?
+  logo        String?  // URL da logo
+  phone       String?
+  address     String?
+  
+  // Relação: 1 Company tem N Jobs
+  jobs Job[]
+  
+  // Auditoria
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  @@map("companies")
 }
 
+// ============================================
+// 3. CANDIDATE - Dados do Candidato
+// ============================================
+// POR QUÊ: Separado de User porque nem todo User é Candidate
+// Só existe se role = CANDIDATE
+
 model Candidate {
-  id      String @id @default(uuid())
-  name    String
-  userId  String @unique
-  user    User   @relation(fields: [userId], references: [id])
+  id     String @id @default(uuid())
+  userId String @unique // 1 User = 1 Candidate
+  
+  // Relação com User
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  // onDelete: Cascade = Se deletar User, deleta Candidate também
+  
+  // Dados pessoais
+  name        String
+  phone       String?
+  address     String?
+  dateOfBirth DateTime?
+  
+  // Dados profissionais
+  bio         String?  // Resumo profissional
+  skills      String[] // ["JavaScript", "React", "Node.js"]
+  experience  Int?     // Anos de experiência
+  resumeUrl   String?  // URL do currículo PDF
+  
+  // Relação: 1 Candidate tem N Applications
   applications Application[]
+  
+  // Auditoria
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  @@map("candidates")
 }
+
+// ============================================
+// 4. JOB - Vaga de Emprego
+// ============================================
+// POR QUÊ: Company oferece vagas
+// Candidate se candidata pra vagas
 
 model Job {
   id        String @id @default(uuid())
-  title     String
   companyId String
-  company   Company @relation(fields: [companyId], references: [id])
+  
+  // Relação: N Jobs pertencem a 1 Company
+  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  // onDelete: Cascade = Se deletar Company, deleta todas Jobs dela
+  
+  // Dados da vaga
+  title       String
+  description String
+  salary      Float?   // Salário (opcional)
+  location    String   // "São Paulo, SP" ou "Remoto"
+  remote      Boolean  @default(false)
+  type        String   @default("FULL_TIME") // FULL_TIME, PART_TIME, CONTRACT
+  
+  // Status da vaga
+  status JobStatus @default(OPEN)
+  
+  // Relação: 1 Job tem N Applications
   applications Application[]
+  
+  // Auditoria
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  @@map("jobs")
 }
+
+enum JobStatus {
+  OPEN   // Vaga aberta (aceitando candidatos)
+  CLOSED // Vaga fechada (contrataram alguém)
+  PAUSED // Vaga pausada (temporariamente sem aceitar)
+}
+
+// ============================================
+// 5. APPLICATION - Candidatura
+// ============================================
+// POR QUÊ: Conecta Candidate com Job
+// Registra quando candidato se candidata
 
 model Application {
   id          String @id @default(uuid())
   candidateId String
   jobId       String
-  candidate   Candidate @relation(fields: [candidateId], references: [id])
-  job         Job      @relation(fields: [jobId], references: [id])
+  
+  // Relações
+  candidate Candidate @relation(fields: [candidateId], references: [id], onDelete: Cascade)
+  job       Job       @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  // onDelete: Cascade = Se deletar Candidate ou Job, deleta Application
+  
+  // Dados da candidatura
+  coverLetter    String? // Carta de apresentação
+  salaryExpected Float?  // Pretensão salarial
+  
+  // Status
+  status ApplicationStatus @default(PENDING)
+  
+  // Auditoria
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  // IMPORTANTE: Candidato não pode aplicar 2x pra mesma vaga!
+  @@unique([candidateId, jobId])
+  @@map("applications")
 }
+
+enum ApplicationStatus {
+  PENDING   // Aguardando análise
+  REVIEWING // Em análise
+  APPROVED  // Aprovado (vai pra entrevista)
+  REJECTED  // Rejeitado
+  HIRED     // Contratado!
+}
+
