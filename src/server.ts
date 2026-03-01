@@ -2,9 +2,9 @@ import Fastify from 'fastify'
 import cors from '@fastify/cors'
 import jwt from '@fastify/jwt'
 import 'dotenv/config'
-import type { FastifyRequest } from 'fastify'
 
 import { authRoutes } from './routes/auth.routes.js'
+import { companyRoutes } from './routes/company.routes.js'
 import { authenticate } from './middlewares/auth.middleware.js'
 
 const app = Fastify({
@@ -26,6 +26,7 @@ await app.register(jwt, {
 
 // Register routes
 await app.register(authRoutes, { prefix: '/auth' })
+await app.register(companyRoutes, { prefix: '/company' })
 
 // Health check
 app.get('/health', async () => {
@@ -41,13 +42,13 @@ app.get('/', async () => {
   return { message: 'Vagaflow API is running!' }
 })
 
-// Protected route
+// Protected route (test)
 app.get(
   '/protected',
   {
     preHandler: [authenticate],
   },
-  async (request: FastifyRequest) => {
+  async (request) => {
     return {
       message: 'You are authenticated!',
       user: request.user,
@@ -70,6 +71,9 @@ app.listen({ port, host }, (err, address) => {
   console.log(`🔐 Auth endpoints:`)
   console.log(`   POST http://localhost:${port}/auth/register`)
   console.log(`   POST http://localhost:${port}/auth/login`)
+  console.log(`🏢 Company endpoints:`)
+  console.log(`   GET  http://localhost:${port}/company/profile`)
+  console.log(`   PATCH http://localhost:${port}/company/profile`)
 })
 
 // Handle shutdown gracefully
