@@ -2,8 +2,10 @@ import Fastify from 'fastify'
 import cors from '@fastify/cors'
 import jwt from '@fastify/jwt'
 import 'dotenv/config'
+import type { FastifyRequest } from 'fastify'
 
 import { authRoutes } from './routes/auth.routes.js'
+import { authenticate } from './middlewares/auth.middleware.js'
 
 const app = Fastify({
   logger: {
@@ -38,6 +40,20 @@ app.get('/health', async () => {
 app.get('/', async () => {
   return { message: 'Vagaflow API is running!' }
 })
+
+// Protected route
+app.get(
+  '/protected',
+  {
+    preHandler: [authenticate],
+  },
+  async (request: FastifyRequest) => {
+    return {
+      message: 'You are authenticated!',
+      user: request.user,
+    }
+  },
+)
 
 // Start server
 const port = Number(process.env.PORT) || 3333
