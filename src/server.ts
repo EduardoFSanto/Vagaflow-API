@@ -7,6 +7,7 @@ import { authRoutes } from './routes/auth.routes.js'
 import { companyRoutes } from './routes/company.routes.js'
 import { candidateRoutes } from './routes/candidate.routes.js'
 import { jobRoutes } from './routes/job.routes.js'
+import { applicationRoutes } from './routes/application.routes.js'
 import { authenticate } from './middlewares/auth.middleware.js'
 
 const app = Fastify({
@@ -31,6 +32,7 @@ await app.register(authRoutes, { prefix: '/auth' })
 await app.register(companyRoutes, { prefix: '/company' })
 await app.register(candidateRoutes, { prefix: '/candidate' })
 await app.register(jobRoutes, { prefix: '/jobs' })
+await app.register(applicationRoutes, { prefix: '/applications' })
 
 // Health check
 app.get('/health', async () => {
@@ -83,6 +85,11 @@ app.listen({ port, host }, (err, address) => {
   console.log(`   POST   http://localhost:${port}/jobs`)
   console.log(`   PATCH  http://localhost:${port}/jobs/:id`)
   console.log(`   DELETE http://localhost:${port}/jobs/:id`)
+  console.log(`📝 Application endpoints:`)
+  console.log(`   POST   http://localhost:${port}/applications/:jobId`)
+  console.log(`   GET    http://localhost:${port}/applications`)
+  console.log(`   GET    http://localhost:${port}/applications/company`)
+  console.log(`   PATCH  http://localhost:${port}/applications/:id`)
 })
 
 // Handle shutdown gracefully
