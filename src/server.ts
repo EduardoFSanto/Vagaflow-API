@@ -6,6 +6,7 @@ import 'dotenv/config'
 import { authRoutes } from './routes/auth.routes.js'
 import { companyRoutes } from './routes/company.routes.js'
 import { candidateRoutes } from './routes/candidate.routes.js'
+import { jobRoutes } from './routes/job.routes.js'
 import { authenticate } from './middlewares/auth.middleware.js'
 
 const app = Fastify({
@@ -29,6 +30,7 @@ await app.register(jwt, {
 await app.register(authRoutes, { prefix: '/auth' })
 await app.register(companyRoutes, { prefix: '/company' })
 await app.register(candidateRoutes, { prefix: '/candidate' })
+await app.register(jobRoutes, { prefix: '/jobs' })
 
 // Health check
 app.get('/health', async () => {
@@ -68,13 +70,19 @@ app.listen({ port, host }, (err, address) => {
   console.log(`   POST http://localhost:${port}/auth/register`)
   console.log(`   POST http://localhost:${port}/auth/login`)
   console.log(`🏢 Company endpoints:`)
-  console.log(`   GET   http://localhost:${port}/company/profile`)
-  console.log(`   PATCH http://localhost:${port}/company/profile`)
+  console.log(`   GET    http://localhost:${port}/company/profile`)
+  console.log(`   PATCH  http://localhost:${port}/company/profile`)
   console.log(`   DELETE http://localhost:${port}/company/profile`)
   console.log(`👤 Candidate endpoints:`)
-  console.log(`   GET   http://localhost:${port}/candidate/profile`)
-  console.log(`   PATCH http://localhost:${port}/candidate/profile`)
+  console.log(`   GET    http://localhost:${port}/candidate/profile`)
+  console.log(`   PATCH  http://localhost:${port}/candidate/profile`)
   console.log(`   DELETE http://localhost:${port}/candidate/profile`)
+  console.log(`💼 Job endpoints:`)
+  console.log(`   GET    http://localhost:${port}/jobs`)
+  console.log(`   GET    http://localhost:${port}/jobs/:id`)
+  console.log(`   POST   http://localhost:${port}/jobs`)
+  console.log(`   PATCH  http://localhost:${port}/jobs/:id`)
+  console.log(`   DELETE http://localhost:${port}/jobs/:id`)
 })
 
 // Handle shutdown gracefully
