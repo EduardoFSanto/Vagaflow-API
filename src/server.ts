@@ -5,6 +5,7 @@ import 'dotenv/config'
 
 import { authRoutes } from './routes/auth.routes.js'
 import { companyRoutes } from './routes/company.routes.js'
+import { candidateRoutes } from './routes/candidate.routes.js'
 import { authenticate } from './middlewares/auth.middleware.js'
 
 const app = Fastify({
@@ -27,6 +28,7 @@ await app.register(jwt, {
 // Register routes
 await app.register(authRoutes, { prefix: '/auth' })
 await app.register(companyRoutes, { prefix: '/company' })
+await app.register(candidateRoutes, { prefix: '/candidate' })
 
 // Health check
 app.get('/health', async () => {
@@ -43,18 +45,12 @@ app.get('/', async () => {
 })
 
 // Protected route (test)
-app.get(
-  '/protected',
-  {
-    preHandler: [authenticate],
-  },
-  async (request) => {
-    return {
-      message: 'You are authenticated!',
-      user: request.user,
-    }
-  },
-)
+app.get('/protected', { preHandler: [authenticate] }, async (request) => {
+  return {
+    message: 'You are authenticated!',
+    user: request.user,
+  }
+})
 
 // Start server
 const port = Number(process.env.PORT) || 3333
@@ -72,8 +68,13 @@ app.listen({ port, host }, (err, address) => {
   console.log(`   POST http://localhost:${port}/auth/register`)
   console.log(`   POST http://localhost:${port}/auth/login`)
   console.log(`🏢 Company endpoints:`)
-  console.log(`   GET  http://localhost:${port}/company/profile`)
+  console.log(`   GET   http://localhost:${port}/company/profile`)
   console.log(`   PATCH http://localhost:${port}/company/profile`)
+  console.log(`   DELETE http://localhost:${port}/company/profile`)
+  console.log(`👤 Candidate endpoints:`)
+  console.log(`   GET   http://localhost:${port}/candidate/profile`)
+  console.log(`   PATCH http://localhost:${port}/candidate/profile`)
+  console.log(`   DELETE http://localhost:${port}/candidate/profile`)
 })
 
 // Handle shutdown gracefully
