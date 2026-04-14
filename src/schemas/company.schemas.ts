@@ -26,6 +26,14 @@ export const updateCompanySchema = z.object({
     .string()
     .min(5, 'Address must be at least 5 characters')
     .optional(),
+  city: z.string().optional(),
+  state: z.string().min(2).max(2).optional(),
+  zipCode: z.string().optional(),
+  country: z.string().optional(),
+  industry: z.string().optional(),
+  companySize: z.enum(['1-50', '51-200', '201-500', '500+']).optional(),
+  foundedYear: z.number().min(1800).max(new Date().getFullYear()).optional(),
+  linkedinUrl: z.string().url('Invalid LinkedIn URL').optional(),
 })
 
 export type UpdateCompanyDTO = z.infer<typeof updateCompanySchema>
