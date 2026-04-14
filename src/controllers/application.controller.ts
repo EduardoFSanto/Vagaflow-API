@@ -1,5 +1,8 @@
 import { FastifyRequest, FastifyReply } from 'fastify'
-import { updateApplicationSchema } from '../schemas/application.schemas.js'
+import {
+  createApplicationSchema,
+  updateApplicationSchema,
+} from '../schemas/application.schemas.js'
 import { prisma } from '../lib/prisma.js'
 
 export class ApplicationController {
@@ -13,6 +16,7 @@ export class ApplicationController {
     try {
       const { userId } = request.user
       const { jobId } = request.params
+      const data = createApplicationSchema.parse(request.body ?? {})
 
       // Busca o candidate do usuário logado
       const candidate = await prisma.candidate.findUnique({
@@ -64,6 +68,11 @@ export class ApplicationController {
         data: {
           candidateId: candidate.id,
           jobId,
+          coverLetter: data.coverLetter,
+          yearsExperience: data.yearsExperience,
+          salaryExpected: data.salaryExpected,
+          availability: data.availability,
+          startDate: data.startDate ? new Date(data.startDate) : undefined,
         },
         include: {
           job: {
