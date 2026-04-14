@@ -1,7 +1,6 @@
 import { z } from 'zod'
 
 export const createApplicationSchema = z.object({
-  jobId: z.string().uuid('Invalid job ID'),
   coverLetter: z
     .string()
     .min(20, 'Cover letter must be at least 20 characters')
