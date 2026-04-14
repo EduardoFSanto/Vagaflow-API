@@ -50,14 +50,26 @@ model Company {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
   // onDelete: Cascade = Se deletar User, deleta Company também
   
-  // Dados da empresa
+  // Dados básicos da empresa
   name        String
-  description String?  // ? = opcional
+  description String?
   cnpj        String?  @unique
   website     String?
   logo        String?  // URL da logo
   phone       String?
+  
+  // Dados de localização
   address     String?
+  city        String?
+  state       String?
+  zipCode     String?
+  country     String?
+  
+  // Dados profissionais
+  industry    String?      // "Tecnologia", "Financeiro", etc.
+  companySize String?      // "1-50", "51-200", "201-500", "500+"
+  foundedYear Int?
+  linkedinUrl String?
   
   // Relação: 1 Company tem N Jobs
   jobs Job[]
@@ -86,14 +98,39 @@ model Candidate {
   // Dados pessoais
   name        String
   phone       String?
-  address     String?
   dateOfBirth DateTime?
   
+  // Dados de localização
+  address     String?
+  city        String?
+  state       String?
+  zipCode     String?
+  country     String?
+  
   // Dados profissionais
-  bio         String?  // Resumo profissional
-  skills      String[] // ["JavaScript", "React", "Node.js"]
-  experience  Int?     // Anos de experiência
-  resumeUrl   String?  // URL do currículo PDF
+  bio         String?      // Resumo profissional
+  title       String?      // Título profissional atual (ex: "Senior Developer")
+  skills      String[]     // ["JavaScript", "React", "Node.js"]
+  experience  Int?         // Anos de experiência
+  resumeUrl   String?      // URL do currículo PDF
+  portfolioUrl String?     // URL do portfólio
+  
+  // Educação
+  education    String?       // Ex: "Bacharelado em Ciência da Computação"
+  university   String?       // Nome da universidade
+  graduationYear Int?
+  certifications String[]    // ["AWS Certified", "Google Cloud Certified"]
+  
+  // Dados adicionais
+  languages   String[]       // ["Português", "Inglês", "Espanhol"]
+  availability String @default("IMMEDIATE") // IMMEDIATE, 30_DAYS, 60_DAYS, NEGOTIABLE
+  employmentType String[]    // ["CLT", "PJ", "Autônomo"]
+  linkedinUrl String?
+  githubUrl   String?
+  
+  // Dados de candidatura
+  expectedSalary Float?
+  salaryExpected String?     // "40k-60k", "60k-80k", etc.
   
   // Relação: 1 Candidate tem N Applications
   applications Application[]
@@ -119,16 +156,33 @@ model Job {
   company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
   // onDelete: Cascade = Se deletar Company, deleta todas Jobs dela
   
-  // Dados da vaga
+  // Dados básicos da vaga
   title       String
   description String
   salary      Float?   // Salário (opcional)
+  salaryMin   Float?   // Salário mínimo
+  salaryMax   Float?   // Salário máximo
   location    String   // "São Paulo, SP" ou "Remoto"
   remote      Boolean  @default(false)
   type        String   @default("FULL_TIME") // FULL_TIME, PART_TIME, CONTRACT
   
+  // Requisitos
+  requiredSkills String[] // ["JavaScript", "React"]
+  requiredExperience Int? // Anos de experiência mínima
+  educationLevel String? // "Ensino Médio", "Graduação", "Pós-graduação"
+  
+  // Informações adicionais
+  department  String?  // Departamento
+  benefits    String[] // ["Healthcare", "Flexible Hours", "Work from Home"]
+  schedule    String?  // Horário
+  languages   String[] // Idiomas necessários
+  
   // Status da vaga
   status JobStatus @default(OPEN)
+  
+  // Auditoria
+  views       Int @default(0) // Quantidade de visualizações
+  appliedCount Int @default(0) // Quantidade de candidatos
   
   // Relação: 1 Job tem N Applications
   applications Application[]
@@ -163,11 +217,23 @@ model Application {
   // onDelete: Cascade = Se deletar Candidate ou Job, deleta Application
   
   // Dados da candidatura
-  coverLetter    String? // Carta de apresentação
-  salaryExpected Float?  // Pretensão salarial
+  coverLetter    String?  // Carta de apresentação
+  salaryExpected Float?   // Pretensão salarial
+  startDate      DateTime? // Data que pode começar
+  availability   String?  // "Immediate", "2 weeks", "1 month"
+  
+  // Informações adicionais
+  yearsExperience Int?    // Anos de experiência que o candidato indicou
+  matchScore     Int?     // Score de match (0-100) - calculado automaticamente
+  notes          String?  // Notas internas da empresa
   
   // Status
   status ApplicationStatus @default(PENDING)
+  
+  // Histórico
+  reviewedAt DateTime?
+  reviewedBy String?     // ID do usuário que revisou
+  rejectionReason String? // Motivo da rejeição
   
   // Auditoria
   createdAt DateTime @default(now())
