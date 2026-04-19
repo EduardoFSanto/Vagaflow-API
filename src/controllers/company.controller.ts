@@ -25,9 +25,24 @@ export class CompanyController {
             select: {
               id: true,
               title: true,
+              description: true,
+              salary: true,
               status: true,
               location: true,
               remote: true,
+              type: true,
+              questions: {
+                select: {
+                  id: true,
+                  prompt: true,
+                  type: true,
+                  required: true,
+                  order: true,
+                },
+                orderBy: {
+                  order: 'asc',
+                },
+              },
               createdAt: true,
             },
             orderBy: {

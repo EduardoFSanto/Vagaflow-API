@@ -1,5 +1,14 @@
 import { z } from 'zod'
 
+const applicationAnswerSchema = z.object({
+  questionId: z.string().uuid('Invalid question id'),
+  answer: z
+    .string()
+    .trim()
+    .min(1, 'Answer is required')
+    .max(2000, 'Answer must have at most 2000 characters'),
+})
+
 export const createApplicationSchema = z.object({
   coverLetter: z
     .string()
@@ -11,6 +20,7 @@ export const createApplicationSchema = z.object({
   availability: z
     .enum(['IMMEDIATE', '2_WEEKS', '1_MONTH', 'NEGOTIABLE'])
     .optional(),
+  questionAnswers: z.array(applicationAnswerSchema).max(12).optional(),
 })
 
 export const updateApplicationSchema = z.object({

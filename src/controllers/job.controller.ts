@@ -10,6 +10,7 @@ export class JobController {
     try {
       const { userId } = request.user
       const data = createJobSchema.parse(request.body)
+      const { questions = [], ...jobData } = data
 
       // Busca a company do usuário logado
       const company = await prisma.company.findUnique({
@@ -25,8 +26,23 @@ export class JobController {
 
       const job = await prisma.job.create({
         data: {
-          ...data,
+          ...jobData,
           companyId: company.id,
+          questions: {
+            create: questions.map((question, index) => ({
+              prompt: question.prompt,
+              type: question.type,
+              required: question.required,
+              order: index,
+            })),
+          },
+        },
+        include: {
+          questions: {
+            orderBy: {
+              order: 'asc',
+            },
+          },
         },
       })
 
@@ -60,6 +76,18 @@ export class JobController {
               name: true,
               logo: true,
               website: true,
+            },
+          },
+          questions: {
+            select: {
+              id: true,
+              prompt: true,
+              type: true,
+              required: true,
+              order: true,
+            },
+            orderBy: {
+              order: 'asc',
             },
           },
         },
@@ -104,6 +132,18 @@ export class JobController {
               applications: true,
             },
           },
+          questions: {
+            select: {
+              id: true,
+              prompt: true,
+              type: true,
+              required: true,
+              order: true,
+            },
+            orderBy: {
+              order: 'asc',
+            },
+          },
         },
       })
 
@@ -134,6 +174,7 @@ export class JobController {
       const { userId } = request.user
       const { id } = request.params
       const data = updateJobSchema.parse(request.body)
+      const { questions, ...jobData } = data
 
       // Verifica se a vaga existe
       const job = await prisma.job.findUnique({
@@ -156,9 +197,40 @@ export class JobController {
         })
       }
 
-      const updatedJob = await prisma.job.update({
-        where: { id },
-        data,
+      const updatedJob = await prisma.$transaction(async (tx) => {
+        const updated = await tx.job.update({
+          where: { id },
+          data: jobData,
+        })
+
+        if (questions) {
+          await tx.jobQuestion.deleteMany({
+            where: { jobId: id },
+          })
+
+          if (questions.length > 0) {
+            await tx.jobQuestion.createMany({
+              data: questions.map((question, index) => ({
+                jobId: id,
+                prompt: question.prompt,
+                type: question.type,
+                required: question.required,
+                order: index,
+              })),
+            })
+          }
+        }
+
+        return tx.job.findUnique({
+          where: { id: updated.id },
+          include: {
+            questions: {
+              orderBy: {
+                order: 'asc',
+              },
+            },
+          },
+        })
       })
 
       return reply.status(200).send(updatedJob)

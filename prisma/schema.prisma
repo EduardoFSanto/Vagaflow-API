@@ -186,6 +186,7 @@ model Job {
   
   // Relação: 1 Job tem N Applications
   applications Application[]
+  questions    JobQuestion[]
   
   // Auditoria
   createdAt DateTime @default(now())
@@ -229,6 +230,9 @@ model Application {
   
   // Status
   status ApplicationStatus @default(PENDING)
+
+  // Respostas das perguntas da vaga
+  answers ApplicationAnswer[]
   
   // Histórico
   reviewedAt DateTime?
@@ -250,5 +254,41 @@ enum ApplicationStatus {
   APPROVED  // Aprovado (vai pra entrevista)
   REJECTED  // Rejeitado
   HIRED     // Contratado!
+}
+
+model JobQuestion {
+  id        String @id @default(uuid())
+  jobId     String
+  prompt    String
+  type      JobQuestionType @default(SHORT_TEXT)
+  required  Boolean @default(false)
+  order     Int @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  job Job @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  answers ApplicationAnswer[]
+
+  @@map("job_questions")
+}
+
+enum JobQuestionType {
+  SHORT_TEXT
+  LONG_TEXT
+}
+
+model ApplicationAnswer {
+  id            String @id @default(uuid())
+  applicationId String
+  questionId    String
+  answer        String
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  application Application @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  question    JobQuestion @relation(fields: [questionId], references: [id], onDelete: Cascade)
+
+  @@unique([applicationId, questionId])
+  @@map("application_answers")
 }
 

@@ -17,6 +17,7 @@ export class ApplicationController {
       const { userId } = request.user
       const { jobId } = request.params
       const data = createApplicationSchema.parse(request.body ?? {})
+      const { questionAnswers = [], ...applicationData } = data
 
       const candidate = await prisma.candidate.findUnique({
         where: { userId },
@@ -31,6 +32,14 @@ export class ApplicationController {
 
       const job = await prisma.job.findUnique({
         where: { id: jobId },
+        include: {
+          questions: {
+            select: {
+              id: true,
+              required: true,
+            },
+          },
+        },
       })
 
       if (!job) {
@@ -61,15 +70,56 @@ export class ApplicationController {
         })
       }
 
+      const questionMap = new Map(job.questions.map((q) => [q.id, q]))
+      const answeredQuestionIds = new Set<string>()
+
+      for (const item of questionAnswers) {
+        if (!questionMap.has(item.questionId)) {
+          return reply.status(400).send({
+            error: 'Validation Error',
+            message: 'One or more answers reference invalid job questions',
+          })
+        }
+
+        if (answeredQuestionIds.has(item.questionId)) {
+          return reply.status(400).send({
+            error: 'Validation Error',
+            message: 'Duplicate answers for the same question are not allowed',
+          })
+        }
+
+        answeredQuestionIds.add(item.questionId)
+      }
+
+      const hasMissingRequiredAnswer = job.questions.some(
+        (question) =>
+          question.required && !answeredQuestionIds.has(question.id),
+      )
+
+      if (hasMissingRequiredAnswer) {
+        return reply.status(400).send({
+          error: 'Validation Error',
+          message: 'Please answer all required job questions',
+        })
+      }
+
       const application = await prisma.application.create({
         data: {
           candidateId: candidate.id,
           jobId,
-          coverLetter: data.coverLetter,
-          yearsExperience: data.yearsExperience,
-          salaryExpected: data.salaryExpected,
-          availability: data.availability,
-          startDate: data.startDate ? new Date(data.startDate) : undefined,
+          coverLetter: applicationData.coverLetter,
+          yearsExperience: applicationData.yearsExperience,
+          salaryExpected: applicationData.salaryExpected,
+          availability: applicationData.availability,
+          startDate: applicationData.startDate
+            ? new Date(applicationData.startDate)
+            : undefined,
+          answers: {
+            create: questionAnswers.map((item) => ({
+              questionId: item.questionId,
+              answer: item.answer,
+            })),
+          },
         },
         include: {
           job: {
@@ -81,6 +131,24 @@ export class ApplicationController {
                   name: true,
                 },
               },
+            },
+          },
+          answers: {
+            select: {
+              id: true,
+              answer: true,
+              question: {
+                select: {
+                  id: true,
+                  prompt: true,
+                  type: true,
+                  required: true,
+                  order: true,
+                },
+              },
+            },
+            orderBy: {
+              createdAt: 'asc',
             },
           },
         },
@@ -206,6 +274,24 @@ export class ApplicationController {
             select: {
               id: true,
               title: true,
+            },
+          },
+          answers: {
+            select: {
+              id: true,
+              answer: true,
+              question: {
+                select: {
+                  id: true,
+                  prompt: true,
+                  type: true,
+                  required: true,
+                  order: true,
+                },
+              },
+            },
+            orderBy: {
+              createdAt: 'asc',
             },
           },
         },
