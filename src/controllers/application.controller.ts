@@ -7,7 +7,7 @@ import { prisma } from '../lib/prisma.js'
 
 export class ApplicationController {
   // ============================================
-  // POST /applications/:jobId → Candidate se candidata
+  // POST /applications/:jobId -> Candidate se candidata
   // ============================================
   static async apply(
     request: FastifyRequest<{ Params: { jobId: string } }>,
@@ -18,7 +18,6 @@ export class ApplicationController {
       const { jobId } = request.params
       const data = createApplicationSchema.parse(request.body ?? {})
 
-      // Busca o candidate do usuário logado
       const candidate = await prisma.candidate.findUnique({
         where: { userId },
       })
@@ -30,7 +29,6 @@ export class ApplicationController {
         })
       }
 
-      // Verifica se a vaga existe e está aberta
       const job = await prisma.job.findUnique({
         where: { id: jobId },
       })
@@ -49,7 +47,6 @@ export class ApplicationController {
         })
       }
 
-      // Verifica se já se candidatou a essa vaga
       const alreadyApplied = await prisma.application.findFirst({
         where: {
           candidateId: candidate.id,
@@ -90,7 +87,14 @@ export class ApplicationController {
       })
 
       return reply.status(201).send(application)
-    } catch (error) {
+    } catch (error: any) {
+      if (error?.name === 'ZodError') {
+        return reply.status(400).send({
+          error: 'Validation Error',
+          details: error.errors,
+        })
+      }
+
       return reply.status(500).send({
         error: 'Internal Server Error',
         message: 'An error occurred while applying to job',
@@ -99,7 +103,7 @@ export class ApplicationController {
   }
 
   // ============================================
-  // GET /applications → Candidate vê suas candidaturas
+  // GET /applications -> Candidate ve suas candidaturas
   // ============================================
   static async listByCandidate(request: FastifyRequest, reply: FastifyReply) {
     try {
@@ -151,7 +155,7 @@ export class ApplicationController {
   }
 
   // ============================================
-  // GET /applications/company → Company vê candidaturas
+  // GET /applications/company -> Company ve candidaturas
   // ============================================
   static async listByCompany(request: FastifyRequest, reply: FastifyReply) {
     try {
@@ -174,7 +178,15 @@ export class ApplicationController {
             companyId: company.id,
           },
         },
-        include: {
+        select: {
+          id: true,
+          status: true,
+          createdAt: true,
+          coverLetter: true,
+          salaryExpected: true,
+          availability: true,
+          startDate: true,
+          yearsExperience: true,
           candidate: {
             select: {
               id: true,
@@ -212,7 +224,7 @@ export class ApplicationController {
   }
 
   // ============================================
-  // PATCH /applications/:id → Company atualiza status
+  // PATCH /applications/:id -> Company atualiza status
   // ============================================
   static async updateStatus(
     request: FastifyRequest<{ Params: { id: string } }>,
@@ -223,7 +235,6 @@ export class ApplicationController {
       const { id } = request.params
       const data = updateApplicationSchema.parse(request.body)
 
-      // Verifica se a candidatura existe
       const application = await prisma.application.findUnique({
         where: { id },
         include: {
@@ -242,7 +253,6 @@ export class ApplicationController {
         })
       }
 
-      // Verifica se a vaga pertence à company do usuário logado
       if (application.job.company.userId !== userId) {
         return reply.status(403).send({
           error: 'Forbidden',
