@@ -275,6 +275,7 @@ model JobQuestion {
 enum JobQuestionType {
   SHORT_TEXT
   LONG_TEXT
+  YES_NO
 }
 
 model ApplicationAnswer {

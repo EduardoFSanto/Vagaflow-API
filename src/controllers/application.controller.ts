@@ -37,6 +37,7 @@ export class ApplicationController {
             select: {
               id: true,
               required: true,
+              type: true,
             },
           },
         },
@@ -72,9 +73,12 @@ export class ApplicationController {
 
       const questionMap = new Map(job.questions.map((q) => [q.id, q]))
       const answeredQuestionIds = new Set<string>()
+      const normalizedAnswers: { questionId: string; answer: string }[] = []
 
       for (const item of questionAnswers) {
-        if (!questionMap.has(item.questionId)) {
+        const question = questionMap.get(item.questionId)
+
+        if (!question) {
           return reply.status(400).send({
             error: 'Validation Error',
             message: 'One or more answers reference invalid job questions',
@@ -89,6 +93,32 @@ export class ApplicationController {
         }
 
         answeredQuestionIds.add(item.questionId)
+
+        const trimmedAnswer = item.answer.trim()
+        if (question.type === 'YES_NO') {
+          const normalizedYesNoAnswer = trimmedAnswer.toUpperCase()
+          if (
+            normalizedYesNoAnswer !== 'YES' &&
+            normalizedYesNoAnswer !== 'NO'
+          ) {
+            return reply.status(400).send({
+              error: 'Validation Error',
+              message:
+                'Yes/No questions only accept YES or NO as answer values',
+            })
+          }
+
+          normalizedAnswers.push({
+            questionId: item.questionId,
+            answer: normalizedYesNoAnswer,
+          })
+          continue
+        }
+
+        normalizedAnswers.push({
+          questionId: item.questionId,
+          answer: trimmedAnswer,
+        })
       }
 
       const hasMissingRequiredAnswer = job.questions.some(
@@ -115,7 +145,7 @@ export class ApplicationController {
             ? new Date(applicationData.startDate)
             : undefined,
           answers: {
-            create: questionAnswers.map((item) => ({
+            create: normalizedAnswers.map((item) => ({
               questionId: item.questionId,
               answer: item.answer,
             })),

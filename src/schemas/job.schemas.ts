@@ -6,7 +6,7 @@ const jobQuestionSchema = z.object({
     .trim()
     .min(10, 'Question prompt must be at least 10 characters')
     .max(240, 'Question prompt must have at most 240 characters'),
-  type: z.enum(['SHORT_TEXT', 'LONG_TEXT']).default('SHORT_TEXT'),
+  type: z.enum(['SHORT_TEXT', 'LONG_TEXT', 'YES_NO']).default('SHORT_TEXT'),
   required: z.boolean().default(false),
 })
 
